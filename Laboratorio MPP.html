@@ -1,0 +1,543 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Laboratorio MPP</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: banco de trabajo — panel de operaciones a la izquierda, estructura enlazada y matriz a la derecha, sobre papel cuadriculado */
+:root{
+  --bg:#f3f5fa; --grid:#e3e8f2; --card:#ffffff; --hdr:#e9edf6;
+  --ink:#18203a; --ink-2:#4a5470; --muted:#6c7590; --rule:#cfd6e4;
+  --left:#b8336a; --up:#0c7c80; --hl:#d98a00; --hl-soft:#fff2d6; --on-hl:#1c1400;
+  --bad:#c93a2e; --ok:#2f8a3e; --seen:#f6f0e2; --code-bg:#1c2238; --code-fg:#dfe4f2; --code-cur:#3a3216;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1320; --grid:#171d2e; --card:#161c2c; --hdr:#1e2639;
+  --ink:#e6e9f3; --ink-2:#a9b1c8; --muted:#8a93ab; --rule:#2c3550;
+  --left:#ff6fa6; --up:#3fd0c8; --hl:#ffbe3d; --hl-soft:#3a2f12; --on-hl:#1c1400;
+  --bad:#ff6b5e; --ok:#5fd171; --seen:#22263a; --code-bg:#0a0d17; --code-fg:#dfe4f2; --code-cur:#3a3216;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1320; --grid:#171d2e; --card:#161c2c; --hdr:#1e2639;
+  --ink:#e6e9f3; --ink-2:#a9b1c8; --muted:#8a93ab; --rule:#2c3550;
+  --left:#ff6fa6; --up:#3fd0c8; --hl:#ffbe3d; --hl-soft:#3a2f12; --on-hl:#1c1400;
+  --bad:#ff6b5e; --ok:#5fd171; --seen:#22263a; --code-bg:#0a0d17; --code-fg:#dfe4f2; --code-cur:#3a3216;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 24px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(1.7rem,3.2vw,2.4rem);line-height:1.05;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1 span{color:var(--left)}
+.lede{margin:6px 0 0;color:var(--ink-2);max-width:62ch}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.85rem;color:var(--ink-2)}
+.legend i{display:inline-block;width:22px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:6px}
+
+.app{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.05rem;margin:0;letter-spacing:.01em}
+.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;color:var(--ink-2);font-weight:700}
+input,select{font:500 .95rem var(--f-mono);padding:7px 8px;border:1px solid var(--rule);border-radius:5px;background:var(--bg);color:var(--ink);width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--hl);outline-offset:2px}
+.ops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+button{font:700 .88rem var(--f-body);padding:8px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--hdr);color:var(--ink);cursor:pointer;transition:background .15s,border-color .15s}
+button:hover:not(:disabled){border-color:var(--ink-2)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.danger{color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row button{flex:1 1 auto}
+.speed{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--ink-2)}
+.speed input{padding:0;width:auto;flex:1;accent-color:var(--hl)}
+#status{font-size:.88rem;padding:8px 10px;border-radius:5px;background:var(--bg);border-left:3px solid var(--rule);min-height:2.4em}
+#status.err{border-left-color:var(--bad)}
+#status.ok{border-left-color:var(--ok)}
+
+pre#code{margin:0;background:var(--code-bg);color:var(--code-fg);font:400 .8rem/1.55 var(--f-mono);border-radius:6px;padding:10px 0;overflow-x:auto}
+pre#code span{display:block;padding:0 12px;white-space:pre;border-left:3px solid transparent}
+pre#code span.cur{background:var(--code-cur);border-left-color:var(--hl);color:#fff}
+ol#log{margin:0;padding:0 0 0 1.6em;max-height:240px;overflow-y:auto;font-size:.85rem;display:flex;flex-direction:column;gap:3px;font-variant-numeric:tabular-nums}
+ol#log li::marker{color:var(--muted);font-family:var(--f-mono);font-size:.75rem}
+ol#log li.last{font-weight:700}
+ol#log:empty::before{content:"Elige una operación para ver cada paso aquí.";color:var(--muted);margin-left:-1.6em}
+
+.stage{display:flex;flex-direction:column;gap:20px;min-width:0}
+.svgbox{overflow-x:auto;border-radius:6px}
+svg{display:block}
+.lbl{font:600 11px var(--f-mono);fill:var(--muted)}
+.node rect.box{fill:var(--card);stroke:var(--ink-2);stroke-width:1.2;transition:fill .2s,stroke .2s}
+.node.hdr rect.box{fill:var(--hdr)}
+.node line{stroke:var(--ink-2);stroke-width:1}
+.node line.slash{stroke:var(--muted)}
+.node text{font:600 12px var(--f-mono);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.node circle{fill:var(--ink)}
+.node.data{cursor:pointer}
+.node.seen rect.box{fill:var(--seen)}
+.node.at rect.box{fill:var(--hl-soft);stroke:var(--hl);stroke-width:2.6}
+.node.hov rect.box{stroke:var(--hl);stroke-width:2}
+.node.doomed rect.box{stroke:var(--bad);stroke-width:2.6;stroke-dasharray:5 3}
+.node.fresh rect.box{stroke:var(--ok);stroke-width:2.8}
+.node.ghost rect.box{fill:var(--hl-soft);stroke:var(--hl);stroke-dasharray:4 3;stroke-width:2}
+.edge{fill:none;stroke-width:1.4;stroke-linejoin:round}
+.edge.l{stroke:var(--left)} .edge.u{stroke:var(--up)}
+.edge.on{stroke:var(--hl);stroke-width:2.8}
+.edge.cut{stroke:var(--bad);stroke-width:2.4;stroke-dasharray:6 4}
+.m-l{fill:var(--left)} .m-u{fill:var(--up)} .m-h{fill:var(--hl)} .m-x{fill:var(--bad)}
+.tag rect{fill:var(--hl)} .tag text{font:700 11px var(--f-mono);fill:var(--on-hl);text-anchor:middle;dominant-baseline:central}
+
+.matrix-wrap{display:flex;flex-wrap:wrap;gap:20px;align-items:start}
+.matrix-scroll{overflow-x:auto;min-width:0}
+table{border-collapse:collapse;font:600 .9rem var(--f-mono);font-variant-numeric:tabular-nums}
+th{font-size:.72rem;color:var(--muted);padding:2px 6px;font-weight:600}
+td{width:42px;height:34px;text-align:center;border:1px solid var(--rule);background:var(--card);color:var(--muted);cursor:pointer}
+td.nz{color:var(--ink);background:var(--hdr);font-weight:700}
+td.sel{outline:2px solid var(--ink-2);outline-offset:-2px}
+td.at{background:var(--hl-soft);outline:2px solid var(--hl);outline-offset:-2px;color:var(--ink)}
+td:hover{border-color:var(--ink-2)}
+.stats{display:flex;flex-direction:column;gap:8px;font-size:.88rem;color:var(--ink-2);max-width:42ch;min-width:0}
+.stats b{color:var(--ink);font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.note{font-size:.82rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Estructuras de datos · Listas enlazadas · Horowitz cap. 4</div>
+      <h1>Matrices <span>poco pobladas</span></h1>
+      <p class="lede">Cada fila y cada columna es una lista circular con nodo de encabezamiento. Ejecuta una operación y sigue cómo avanzan los punteros por LEFT y UP, paso a paso y con el código en C++ al lado.</p>
+    </div>
+    <div class="legend" aria-label="Leyenda">
+      <span><i style="border-color:var(--left)"></i>LEFT (fila)</span>
+      <span><i style="border-color:var(--up)"></i>UP (columna)</span>
+      <span><i style="border-color:var(--hl)"></i>puntero que se sigue</span>
+      <span><i style="border-color:var(--bad);border-top-style:dashed"></i>enlace que se reemplaza</span>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside class="panel">
+      <div>
+        <div class="eyebrow">Operación</div>
+        <h2>Posición y valor</h2>
+      </div>
+      <div class="fields">
+        <label for="inF">Fila F<input id="inF" type="number" min="1" value="2"></label>
+        <label for="inC">Columna C<input id="inC" type="number" min="1" value="5"></label>
+        <label for="inV">Valor V<input id="inV" type="number" value="11"></label>
+      </div>
+      <div class="ops">
+        <button id="bIns" class="primary" type="button">Insertar</button>
+        <button id="bDel" class="danger" type="button">Eliminar</button>
+        <button id="bBus" type="button">Buscar (F, C)</button>
+        <button id="bFil" type="button">Recorrer fila F</button>
+        <button id="bCol" type="button">Recorrer columna C</button>
+        <button id="bRnd" type="button">Matriz aleatoria</button>
+      </div>
+      <div id="status" role="status">Haz clic en una celda o en un nodo para elegir su posición.</div>
+
+      <div>
+        <div class="eyebrow">Reproducción</div>
+      </div>
+      <div class="row">
+        <button id="bPlay" type="button" disabled>Pausar</button>
+        <button id="bNext" type="button" disabled>Siguiente paso</button>
+        <button id="bEnd" type="button" disabled>Terminar</button>
+      </div>
+      <div class="speed"><label for="spd" style="flex-direction:row;font-weight:400">Velocidad</label><input id="spd" type="range" min="150" max="1800" step="50" value="900" style="direction:rtl"></div>
+
+      <div class="eyebrow">Código que se ejecuta</div>
+      <pre id="code" aria-label="Código C++"></pre>
+      <div class="eyebrow">Pasos</div>
+      <ol id="log" aria-live="polite"></ol>
+    </aside>
+
+    <section class="stage">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div class="eyebrow">Memoria</div>
+            <h2>Estructura enlazada (AROW · ACOL)</h2>
+          </div>
+          <div class="row" style="flex:0 1 auto">
+            <label for="dimN" style="flex-direction:row;align-items:center;gap:6px">Filas<select id="dimN"></select></label>
+            <label for="dimM" style="flex-direction:row;align-items:center;gap:6px">Columnas<select id="dimM"></select></label>
+            <button id="bEx" type="button">Ejemplo de clase</button>
+            <button id="bClr" type="button">Vaciar</button>
+          </div>
+        </div>
+        <div class="svgbox"><svg id="svg" role="img" aria-label="Nodos de la matriz con sus punteros LEFT y UP"></svg></div>
+        <p class="note">Formato del nodo: arriba LEFT | UP, abajo V | F | C. AROW tiene C = 0 y no usa UP; ACOL tiene F = 0 y no usa LEFT. Una lista vacía tiene su encabezado apuntándose a sí mismo.</p>
+      </div>
+
+      <div class="panel">
+        <div>
+          <div class="eyebrow">Vista lógica</div>
+          <h2>La matriz que representa</h2>
+        </div>
+        <div class="matrix-wrap">
+          <div class="matrix-scroll"><table id="mat"></table></div>
+          <div class="stats" id="stats"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const NS = "http://www.w3.org/2000/svg";
+const SAMPLE = [[1,3,6],[1,5,9],[2,1,2],[2,4,7],[2,5,8],[2,7,4],[3,1,10],[4,3,12],[6,4,3],[6,7,5]];
+let N = 6, M = 7;
+const data = new Map();
+const key = (f,c) => f + "," + c;
+const W = 70, H = 42, DX = 100, DY = 80, LX = 44, TY = 36;
+const px = c => LX + c*DX, py = f => TY + f*DY;
+
+const CODE = {
+  buscar:[
+"Nodo* buscar(int f, int c) {",
+"  Nodo* p = arow[f]->left;",
+"  while (p->c > c)",
+"    p = p->left;",
+"  if (p->c == c) return p;",
+"  return nullptr;   // el valor es 0",
+"}"],
+  insertar:[
+"bool insertar(int v, int f, int c) {",
+"  if (v == 0 || buscar(f, c)) return false;",
+"  Nodo* nuevo = new Nodo(v, f, c);",
+"  Nodo* q = arow[f];",
+"  while (q->left->c > c) q = q->left;",
+"  nuevo->left = q->left;",
+"  q->left = nuevo;",
+"  Nodo* r = acol[c];",
+"  while (r->up->f > f) r = r->up;",
+"  nuevo->up = r->up;",
+"  r->up = nuevo;",
+"  return true;",
+"}"],
+  eliminar:[
+"bool eliminar(int f, int c) {",
+"  Nodo* q = arow[f];",
+"  while (q->left->c > c) q = q->left;",
+"  if (q->left->c != c) return false;",
+"  Nodo* x = q->left;",
+"  q->left = x->left;",
+"  Nodo* r = acol[c];",
+"  while (r->up != x) r = r->up;",
+"  r->up = x->up;",
+"  delete x;",
+"  return true;",
+"}"],
+  fila:[
+"void recorrerFila(int f) {",
+"  Nodo* p = arow[f]->left;",
+"  while (p->c != 0) {      // C = 0: encabezado",
+"    visitar(p);",
+"    p = p->left;",
+"  }",
+"}"],
+  col:[
+"void recorrerColumna(int c) {",
+"  Nodo* p = acol[c]->up;",
+"  while (p->f != 0) {      // F = 0: encabezado",
+"    visitar(p);",
+"    p = p->up;",
+"  }",
+"}"]
+};
+
+const rowList = f => [...data.keys()].map(k=>k.split(",").map(Number)).filter(([a])=>a===f).map(([,b])=>b).sort((a,b)=>b-a);
+const colList = c => [...data.keys()].map(k=>k.split(",").map(Number)).filter(([,b])=>b===c).map(([a])=>a).sort((a,b)=>b-a);
+const descR = (f,c) => c===0 ? `AROW[${f}]` : `nodo (${data.get(key(f,c))}, ${f}, ${c})`;
+const descC = (f,c) => f===0 ? `ACOL[${c}]` : `nodo (${data.get(key(f,c))}, ${f}, ${c})`;
+
+/* ---------- rendering ---------- */
+function el(tag, attrs={}, parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+
+function drawNode(g, f, c, kind, cls=""){
+  const n = el("g",{class:`node ${kind==="data"?"data":"hdr"} ${cls}`, id:cls.includes("ghost")?"ghost":`N-${f}-${c}`, transform:`translate(${px(c)},${py(f)})`},g);
+  n.dataset.f=f; n.dataset.c=c;
+  el("rect",{class:"box",width:W,height:H,rx:3},n);
+  el("line",{x1:0,y1:H/2,x2:W,y2:H/2},n);
+  el("line",{x1:W/2,y1:0,x2:W/2,y2:H/2},n);
+  el("line",{x1:W/3,y1:H/2,x2:W/3,y2:H},n);
+  el("line",{x1:2*W/3,y1:H/2,x2:2*W/3,y2:H},n);
+  if(kind==="row") el("line",{class:"slash",x1:W/2,y1:H/2,x2:W,y2:0},n);
+  if(kind==="col") el("line",{class:"slash",x1:0,y1:H/2,x2:W/2,y2:0},n);
+  if(kind!=="col" && !cls.includes("ghost")) el("circle",{cx:W/4,cy:H/4,r:2.6},n);
+  if(kind!=="row" && !cls.includes("ghost")) el("circle",{cx:3*W/4,cy:H/4,r:2.6},n);
+  const vals = kind==="row" ? ["","","0"] : kind==="col" ? ["","0",""] : [data.get(key(f,c)) ?? n.dataset.v, f, c];
+  vals.forEach((t,i)=>{ const tx=el("text",{x:W/6+i*W/3,y:3*H/4},n); tx.textContent=t; });
+  return n;
+}
+function edge(g, id, d, type){
+  const p = el("path",{class:`edge ${type}`, id, d, "marker-end":`url(#m${type})`},g);
+  p.dataset.type=type; return p;
+}
+
+function renderStructure(){
+  const svg=$("#svg"); svg.innerHTML="";
+  const Wt = LX + M*DX + W + 36, Ht = TY + N*DY + H + 34;
+  svg.setAttribute("width",Wt); svg.setAttribute("height",Ht); svg.setAttribute("viewBox",`0 0 ${Wt} ${Ht}`);
+  const defs=el("defs",{},svg);
+  [["l","m-l"],["u","m-u"],["h","m-h"],["x","m-x"]].forEach(([id,c])=>{
+    const m=el("marker",{id:"m"+id,viewBox:"0 0 8 8",refX:7.5,refY:4,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"},defs);
+    el("path",{class:c,d:"M0,0.5 L8,4 L0,7.5 z"},m);
+  });
+  const gN=el("g",{},svg), gE=el("g",{},svg); el("g",{id:"overlay"},svg);
+  const t1=el("text",{class:"lbl",x:px(0)+W/2,y:TY+H/2,"text-anchor":"middle","dominant-baseline":"central"},gN); t1.textContent="ACOL ↗ / AROW ↙";
+  for(let c=1;c<=M;c++){ const t=el("text",{class:"lbl",x:px(c)+W/2,y:TY-10,"text-anchor":"middle"},gN); t.textContent=`[${c}]`; drawNode(gN,0,c,"col"); }
+  for(let f=1;f<=N;f++){ const t=el("text",{class:"lbl",x:px(0)-8,y:py(f)+H/2,"text-anchor":"end","dominant-baseline":"central"},gN); t.textContent=`[${f}]`; drawNode(gN,f,0,"row"); }
+  for(const k of data.keys()){ const [f,c]=k.split(",").map(Number); drawNode(gN,f,c,"data"); }
+
+  // LEFT pointers (rows)
+  for(let f=1;f<=N;f++){
+    const cols=rowList(f), y0=py(f)+H/4, top=py(f)-12, x0=px(0)+W/4;
+    if(cols.length) edge(gE,`L-${f}-0`,`M${x0},${y0} V${top} H${px(M)+W+18} V${y0} H${px(cols[0])+W}`,"l");
+    else edge(gE,`L-${f}-0`,`M${x0},${y0} V${top} H${px(0)+W+14} V${y0} H${px(0)+W}`,"l");
+    cols.forEach((c,k)=>{ const tx = k+1<cols.length ? px(cols[k+1])+W : px(0)+W; edge(gE,`L-${f}-${c}`,`M${px(c)+W/4},${y0} H${tx}`,"l"); });
+  }
+  // UP pointers (columns)
+  for(let c=1;c<=M;c++){
+    const rows=colList(c), x0=px(c)+3*W/4, y0=py(0)+H/4, xs=px(c)+W+10;
+    if(rows.length) edge(gE,`U-0-${c}`,`M${x0},${y0} H${xs} V${py(N)+H+18} H${x0} V${py(rows[0])+H}`,"u");
+    else edge(gE,`U-0-${c}`,`M${x0},${y0} H${xs} V${py(0)+H+14} H${x0} V${py(0)+H}`,"u");
+    rows.forEach((f,k)=>{ const ty = k+1<rows.length ? py(rows[k+1])+H : py(0)+H; edge(gE,`U-${f}-${c}`,`M${x0},${py(f)+H/4} V${ty}`,"u"); });
+  }
+  svg.querySelectorAll(".node.data").forEach(n=>n.addEventListener("click",()=>{ if(run) return; pick(+n.dataset.f,+n.dataset.c); }));
+}
+
+function renderMatrix(){
+  const t=$("#mat"); t.innerHTML="";
+  const hr=t.insertRow(); hr.appendChild(document.createElement("th"));
+  for(let c=1;c<=M;c++){ const th=document.createElement("th"); th.textContent=c; hr.appendChild(th); }
+  for(let f=1;f<=N;f++){
+    const r=t.insertRow(); const th=document.createElement("th"); th.textContent=f; r.appendChild(th);
+    for(let c=1;c<=M;c++){
+      const td=r.insertCell(); const v=data.get(key(f,c));
+      td.textContent = v ?? 0; td.id=`cell-${f}-${c}`; if(v!==undefined) td.classList.add("nz");
+      td.addEventListener("click",()=>{ if(!run) pick(f,c); });
+      td.addEventListener("mouseenter",()=>{ const n=document.getElementById(`N-${f}-${c}`); if(n) n.classList.add("hov"); });
+      td.addEventListener("mouseleave",()=>{ const n=document.getElementById(`N-${f}-${c}`); if(n) n.classList.remove("hov"); });
+    }
+  }
+  markSel();
+  const k=data.size, cells=N*M;
+  $("#stats").innerHTML = `
+    <div>Celdas de la matriz densa: <b>${N} × ${M} = ${cells}</b></div>
+    <div>Nodos con dato: <b>${k}</b> · encabezados: <b>${N} + ${M} = ${N+M}</b></div>
+    <div>Densidad: <b>${(100*k/cells).toFixed(1)} %</b></div>
+    <div class="note">A esta escala la lista no ahorra nada. Con 10 000 × 10 000 y 4 datos, el arreglo ocupa unos 400 MB de enteros, mientras que la estructura enlazada solo necesita 20 000 encabezados y 4 nodos (menos de 1 MB).</div>`;
+}
+function markSel(){
+  document.querySelectorAll("td.sel").forEach(x=>x.classList.remove("sel"));
+  const td=document.getElementById(`cell-${$("#inF").value}-${$("#inC").value}`); if(td) td.classList.add("sel");
+}
+function renderAll(){ renderStructure(); renderMatrix(); }
+function pick(f,c){ $("#inF").value=f; $("#inC").value=c; const v=data.get(key(f,c)); if(v!==undefined) $("#inV").value=v; markSel(); status(`Posición (${f}, ${c}) seleccionada${v!==undefined?`, valor ${v}`:", vale 0"}.`); }
+function status(msg,type=""){ const s=$("#status"); s.textContent=msg; s.className=type; }
+function showCode(lines){ const pre=$("#code"); pre.innerHTML=""; lines.forEach(l=>{ const s=document.createElement("span"); s.textContent=l||" "; pre.appendChild(s); }); }
+
+/* ---------- step engine ---------- */
+let run=null, timer=null;
+function clearMarks(){
+  document.querySelectorAll(".node.at,.node.doomed").forEach(n=>n.classList.remove("at","doomed"));
+  document.querySelectorAll(".edge.on,.edge.cut").forEach(e=>{ e.classList.remove("on","cut"); e.setAttribute("marker-end",`url(#m${e.dataset.type})`); });
+  document.querySelectorAll("td.at").forEach(t=>t.classList.remove("at"));
+  const ov=$("#overlay"); ov.querySelectorAll(".tag").forEach(t=>t.remove());
+}
+function applyStep(s){
+  clearMarks();
+  Object.assign(run.ptrs, s.ptr||{});
+  (s.drop||[]).forEach(p=>delete run.ptrs[p]);
+  const ov=$("#overlay"), stack={};
+  for(const [name,[f,c]] of Object.entries(run.ptrs)){
+    const n=document.getElementById(`N-${f}-${c}`);
+    if(n){ n.classList.add("at"); if(f>0&&c>0) run.seen.add(key(f,c)); }
+    const td=document.getElementById(`cell-${f}-${c}`); if(td) td.classList.add("at");
+    const i=stack[key(f,c)]=(stack[key(f,c)]??-1)+1;
+    const w=name.length*8+12;
+    const g=el("g",{class:"tag",transform:`translate(${px(c)+i*(w+4)},${py(f)-24})`},ov);
+    el("rect",{width:w,height:16,rx:3},g); const t=el("text",{x:w/2,y:8},g); t.textContent=name;
+  }
+  run.seen.forEach(k=>{ const n=document.getElementById(`N-${k.replace(",","-")}`); if(n) n.classList.add("seen"); });
+  (s.edges||[]).forEach(id=>{ const e=document.getElementById(id); if(e){ e.classList.add("on"); e.setAttribute("marker-end","url(#mh)"); }});
+  (s.cut||[]).forEach(id=>{ const e=document.getElementById(id); if(e){ e.classList.add("cut"); e.setAttribute("marker-end","url(#mx)"); }});
+  (s.doom||[]).forEach(([f,c])=>{ const n=document.getElementById(`N-${f}-${c}`); if(n) n.classList.add("doomed"); });
+  if(s.ghost) run.ghost=s.ghost;
+  if(run.ghost && !$("#ghost")){ const [v,f,c]=run.ghost; const g=drawNode(ov,f,c,"data","ghost"); g.querySelector("text").textContent=v; }
+  document.querySelectorAll("#code span").forEach((x,i)=>x.classList.toggle("cur",i===s.line));
+  const log=$("#log"); log.querySelectorAll("li.last").forEach(l=>l.classList.remove("last"));
+  const li=document.createElement("li"); li.textContent=s.msg; li.className="last"; log.appendChild(li); log.scrollTop=log.scrollHeight;
+}
+function startOp(op){
+  if(!op) return;
+  stop(); renderStructure(); showCode(op.code); $("#log").innerHTML="";
+  run={...op,i:-1,ptrs:{},seen:new Set(),ghost:null};
+  setRunning(true); status(op.title); next(); play();
+}
+function next(){
+  if(!run) return;
+  run.i++;
+  applyStep(run.steps[run.i]);
+  if(run.i>=run.steps.length-1) finish();
+}
+function finish(){
+  stop();
+  const r=run; run=null; setRunning(false);
+  if(r.commit){ r.commit(); renderAll(); if(r.fresh){ const n=document.getElementById(`N-${r.fresh[0]}-${r.fresh[1]}`); if(n) n.classList.add("fresh"); } }
+  status(r.result, r.ok===false?"err":"ok");
+}
+function play(){ stop(); timer=setInterval(next, +$("#spd").value); $("#bPlay").textContent="Pausar"; }
+function stop(){ if(timer){ clearInterval(timer); timer=null; } $("#bPlay").textContent="Reanudar"; }
+function setRunning(b){
+  ["#bIns","#bDel","#bBus","#bFil","#bCol","#bRnd","#bEx","#bClr","#dimN","#dimM","#inF","#inC","#inV"].forEach(s=>$(s).disabled=b);
+  ["#bPlay","#bNext","#bEnd"].forEach(s=>$(s).disabled=!b);
+}
+
+/* ---------- operations as steps ---------- */
+function readFC(needV){
+  const f=+$("#inF").value, c=+$("#inC").value, v=+$("#inV").value;
+  if(!Number.isInteger(f)||f<1||f>N){ status(`La fila debe estar entre 1 y ${N}. El 0 está reservado para los encabezados.`,"err"); return null; }
+  if(!Number.isInteger(c)||c<1||c>M){ status(`La columna debe estar entre 1 y ${M}. El 0 está reservado para los encabezados.`,"err"); return null; }
+  if(needV && !Number.isInteger(v)){ status("Escribe un valor entero.","err"); return null; }
+  return {f,c,v};
+}
+
+function opBuscar(){
+  const a=readFC(); if(!a) return; const {f,c}=a;
+  const list=[...rowList(f),0], S=[]; let i=0;
+  S.push({line:1,ptr:{p:[f,list[0]]},edges:[`L-${f}-0`],msg:`p = arow[${f}]->left → ${descR(f,list[0])}${list[0]===0?" (fila vacía)":""}`});
+  while(list[i]>c){
+    S.push({line:2,msg:`p->c = ${list[i]} > ${c} → seguir avanzando`});
+    S.push({line:3,ptr:{p:[f,list[i+1]]},edges:[`L-${f}-${list[i]}`],msg:`p = p->left → ${descR(f,list[i+1])}`});
+    i++;
+  }
+  S.push({line:2,msg: list[i]===0 ? `p->c = 0 (volvimos al encabezado) → salir del ciclo` : `p->c = ${list[i]} ≤ ${c} → salir del ciclo`});
+  const ok=list[i]===c;
+  S.push({line:ok?4:5,msg: ok?`p->c == ${c}: encontrado, M[${f}][${c}] = ${data.get(key(f,c))}`:`p->c ≠ ${c}: no hay nodo, M[${f}][${c}] = 0`});
+  startOp({code:CODE.buscar,steps:S,title:`Buscando (${f}, ${c})…`,result:ok?`Encontrado: M[${f}][${c}] = ${data.get(key(f,c))}.`:`No existe nodo en (${f}, ${c}); el valor es 0.`});
+}
+
+function opInsertar(){
+  const a=readFC(true); if(!a) return; const {f,c,v}=a;
+  if(v===0){ status("Una MPP no guarda ceros: insertar un 0 no crea nodo.","err"); return; }
+  const S=[];
+  if(data.has(key(f,c))){
+    S.push({line:1,ptr:{p:[f,c]},msg:`buscar(${f}, ${c}) encontró ${descR(f,c)} → return false`});
+    return startOp({code:CODE.insertar,steps:S,title:"Insertando…",ok:false,result:`Ya existe un valor en (${f}, ${c}). Elimínalo primero o elige otra posición.`});
+  }
+  S.push({line:1,msg:`buscar(${f}, ${c}) → nullptr: la posición está libre`});
+  S.push({line:2,ghost:[v,f,c],msg:`new Nodo(${v}, ${f}, ${c}): creado, aún sin enlazar`});
+  S.push({line:3,ptr:{q:[f,0]},msg:`q = arow[${f}] (encabezado de la fila)`});
+  const list=[...rowList(f),0]; let k=0, qc=0;
+  while(list[k]>c){ S.push({line:4,edges:[`L-${f}-${qc}`],ptr:{q:[f,list[k]]},msg:`q->left->c = ${list[k]} > ${c} → q = q->left`}); qc=list[k]; k++; }
+  S.push({line:4,edges:[`L-${f}-${qc}`],msg:`q->left->c = ${list[k]}${list[k]===0?" (encabezado)":""} ≤ ${c} → salir: el nuevo va a la izquierda de q`});
+  S.push({line:5,edges:[`L-${f}-${qc}`],msg:`nuevo->left = q->left → ${descR(f,list[k])}`});
+  S.push({line:6,cut:[`L-${f}-${qc}`],msg:`q->left = nuevo: ${descR(f,qc)} deja de apuntar a ${descR(f,list[k])}`});
+  S.push({line:7,ptr:{r:[0,c]},drop:["q"],msg:`r = acol[${c}] (encabezado de la columna)`});
+  const cl=[...colList(c),0]; k=0; let rf=0;
+  while(cl[k]>f){ S.push({line:8,edges:[`U-${rf}-${c}`],ptr:{r:[cl[k],c]},msg:`r->up->f = ${cl[k]} > ${f} → r = r->up`}); rf=cl[k]; k++; }
+  S.push({line:8,edges:[`U-${rf}-${c}`],msg:`r->up->f = ${cl[k]}${cl[k]===0?" (encabezado)":""} ≤ ${f} → salir: el nuevo va encima de r`});
+  S.push({line:9,edges:[`U-${rf}-${c}`],msg:`nuevo->up = r->up → ${descC(cl[k],c)}`});
+  S.push({line:10,cut:[`U-${rf}-${c}`],msg:`r->up = nuevo: ${descC(rf,c)} ahora apunta al nuevo nodo`});
+  S.push({line:11,drop:["r"],msg:`Listo: el nodo quedó en la fila ${f} y en la columna ${c}`});
+  startOp({code:CODE.insertar,steps:S,title:`Insertando ${v} en (${f}, ${c})…`,commit:()=>data.set(key(f,c),v),fresh:[f,c],result:`Insertado ${v} en (${f}, ${c}). Se ajustaron 2 punteros de la fila y 2 de la columna.`});
+}
+
+function opEliminar(){
+  const a=readFC(); if(!a) return; const {f,c}=a; const S=[];
+  S.push({line:1,ptr:{q:[f,0]},msg:`q = arow[${f}]`});
+  const list=[...rowList(f),0]; let k=0, qc=0;
+  while(list[k]>c){ S.push({line:2,edges:[`L-${f}-${qc}`],ptr:{q:[f,list[k]]},msg:`q->left->c = ${list[k]} > ${c} → q = q->left`}); qc=list[k]; k++; }
+  S.push({line:2,edges:[`L-${f}-${qc}`],msg:`q->left->c = ${list[k]}${list[k]===0?" (encabezado)":""} ≤ ${c} → salir`});
+  if(list[k]!==c){
+    S.push({line:3,msg:`q->left->c ≠ ${c} → no existe, return false`});
+    return startOp({code:CODE.eliminar,steps:S,title:"Eliminando…",ok:false,result:`No hay nodo en (${f}, ${c}); no hay nada que eliminar.`});
+  }
+  const val=data.get(key(f,c));
+  S.push({line:3,msg:`q->left->c == ${c} → el nodo existe`});
+  S.push({line:4,ptr:{x:[f,c]},doom:[[f,c]],msg:`x = q->left → ${descR(f,c)}`});
+  S.push({line:5,doom:[[f,c]],cut:[`L-${f}-${qc}`],edges:[`L-${f}-${c}`],msg:`q->left = x->left → ${descR(f,qc)} salta a ${descR(f,list[k+1])}`});
+  S.push({line:6,doom:[[f,c]],ptr:{r:[0,c]},drop:["q"],msg:`r = acol[${c}]`});
+  const cl=[...colList(c),0]; k=0; let rf=0;
+  while(cl[k]!==f){ S.push({line:7,doom:[[f,c]],edges:[`U-${rf}-${c}`],ptr:{r:[cl[k],c]},msg:`r->up es ${descC(cl[k],c)} ≠ x → r = r->up`}); rf=cl[k]; k++; }
+  S.push({line:7,doom:[[f,c]],edges:[`U-${rf}-${c}`],msg:`r->up == x → salir`});
+  S.push({line:8,doom:[[f,c]],cut:[`U-${rf}-${c}`],edges:[`U-${f}-${c}`],msg:`r->up = x->up → ${descC(rf,c)} salta a ${descC(cl[k+1],c)}`});
+  S.push({line:9,doom:[[f,c]],msg:`delete x: se libera la memoria del nodo`});
+  S.push({line:10,drop:["r","x"],msg:`Listo: (${f}, ${c}) vuelve a valer 0`});
+  startOp({code:CODE.eliminar,steps:S,title:`Eliminando (${f}, ${c})…`,commit:()=>data.delete(key(f,c)),result:`Eliminado el ${val} de (${f}, ${c}). Recuerda: sin el delete quedaría memoria perdida.`});
+}
+
+function opRecorrer(isRow){
+  const a=readFC(); if(!a) return; const {f,c}=a; const S=[], vals=[];
+  if(isRow){
+    const list=[...rowList(f),0];
+    S.push({line:1,ptr:{p:[f,list[0]]},edges:[`L-${f}-0`],msg:`p = arow[${f}]->left → ${descR(f,list[0])}`});
+    for(let i=0;i<list.length;i++){
+      if(list[i]===0){ S.push({line:2,msg:`p->c = 0 → volvimos al encabezado, fin del recorrido`}); break; }
+      S.push({line:2,msg:`p->c = ${list[i]} ≠ 0 → seguir`});
+      vals.push(data.get(key(f,list[i]))); S.push({line:3,msg:`visitar: M[${f}][${list[i]}] = ${data.get(key(f,list[i]))}`});
+      S.push({line:4,ptr:{p:[f,list[i+1]]},edges:[`L-${f}-${list[i]}`],msg:`p = p->left → ${descR(f,list[i+1])}`});
+    }
+    startOp({code:CODE.fila,steps:S,title:`Recorriendo fila ${f}…`,result:vals.length?`Fila ${f}, de derecha a izquierda: ${vals.join(", ")}.`:`La fila ${f} está vacía: AROW[${f}] se apunta a sí mismo.`});
+  } else {
+    const list=[...colList(c),0];
+    S.push({line:1,ptr:{p:[list[0],c]},edges:[`U-0-${c}`],msg:`p = acol[${c}]->up → ${descC(list[0],c)}`});
+    for(let i=0;i<list.length;i++){
+      if(list[i]===0){ S.push({line:2,msg:`p->f = 0 → volvimos al encabezado, fin del recorrido`}); break; }
+      S.push({line:2,msg:`p->f = ${list[i]} ≠ 0 → seguir`});
+      vals.push(data.get(key(list[i],c))); S.push({line:3,msg:`visitar: M[${list[i]}][${c}] = ${data.get(key(list[i],c))}`});
+      S.push({line:4,ptr:{p:[list[i+1],c]},edges:[`U-${list[i]}-${c}`],msg:`p = p->up → ${descC(list[i+1],c)}`});
+    }
+    startOp({code:CODE.col,steps:S,title:`Recorriendo columna ${c}…`,result:vals.length?`Columna ${c}, de abajo hacia arriba: ${vals.join(", ")}.`:`La columna ${c} está vacía: ACOL[${c}] se apunta a sí mismo.`});
+  }
+}
+
+/* ---------- setup ---------- */
+function loadSample(){ N=6; M=7; data.clear(); SAMPLE.forEach(([f,c,v])=>data.set(key(f,c),v)); syncDims(); renderAll(); status("Cargado el ejemplo de la clase (6 × 7, 10 valores)."); }
+function syncDims(){ $("#dimN").value=N; $("#dimM").value=M; $("#inF").max=N; $("#inC").max=M; }
+for(let i=1;i<=9;i++){ $("#dimN").add(new Option(i,i)); }
+for(let i=1;i<=10;i++){ $("#dimM").add(new Option(i,i)); }
+function resize(){
+  N=+$("#dimN").value; M=+$("#dimM").value;
+  for(const k of [...data.keys()]){ const [f,c]=k.split(",").map(Number); if(f>N||c>M) data.delete(k); }
+  syncDims(); renderAll(); status(`Matriz de ${N} × ${M}. Los valores fuera del tamaño se descartaron.`);
+}
+$("#dimN").addEventListener("change",resize); $("#dimM").addEventListener("change",resize);
+$("#bEx").addEventListener("click",loadSample);
+$("#bClr").addEventListener("click",()=>{ data.clear(); renderAll(); status("Matriz vacía: cada encabezado se apunta a sí mismo."); });
+$("#bRnd").addEventListener("click",()=>{ data.clear(); for(let f=1;f<=N;f++) for(let c=1;c<=M;c++) if(Math.random()<0.22) data.set(key(f,c),1+Math.floor(Math.random()*20)); renderAll(); status(`Matriz aleatoria con ${data.size} valores.`); });
+$("#bBus").addEventListener("click",opBuscar);
+$("#bIns").addEventListener("click",opInsertar);
+$("#bDel").addEventListener("click",opEliminar);
+$("#bFil").addEventListener("click",()=>opRecorrer(true));
+$("#bCol").addEventListener("click",()=>opRecorrer(false));
+$("#bPlay").addEventListener("click",()=>{ if(timer) stop(); else play(); });
+$("#bNext").addEventListener("click",()=>{ stop(); next(); });
+$("#bEnd").addEventListener("click",()=>{ stop(); while(run) next(); });
+$("#spd").addEventListener("input",()=>{ if(timer) play(); });
+["#inF","#inC"].forEach(s=>$(s).addEventListener("input",markSel));
+
+showCode(CODE.buscar);
+loadSample();
+status("Haz clic en una celda o en un nodo para elegir su posición, luego elige una operación.");
+})();
+</script>
+
+</body></html>
